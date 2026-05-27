@@ -111,7 +111,9 @@ This allows containers to behave like real terminal environments.
 
 ```text
 LXR/
-├── cmd/
+├── cmd/server/
+|   |main.go
+|   |routes.go
 ├── internal/
 │   ├── app/
 │   ├── handlers/
@@ -120,9 +122,8 @@ LXR/
 │   ├── models/
 │   └── response/
 ├── script/
-├── storage/
 ├── .env
-└── main.go
+└── Makefile
 ```
 
 ---

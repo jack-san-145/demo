@@ -12,17 +12,17 @@ Written in Go, LXR directly orchestrates namespaces, cgroups, networking, PTY sy
 
 # Features
 
+* Create containers using Linux namespaces
+* Custom O(1) IP allocator with reusable IP pools
+* Custom bridge networking with veth pairs
+* Unix socket based daemon communication
 * Pull container images directly from Docker Hub
 * Extract and manage isolated rootfs environments
-* Create containers using Linux namespaces
-* Custom bridge networking with veth pairs
-* Custom O(1) IP allocator with reusable IP pools
 * Container lifecycle management
 * PTY based interactive shell execution
 * cgroup based resource control
 * Browser-accessible `code-server` inside containers
 * Persistent container metadata
-* Unix socket based daemon communication
 * CLI driven workflow
 
 ---
@@ -193,22 +193,13 @@ make build
 ```bash
 sudo make run
 ```
-
-````
-
-LXR daemon listens on:
-
-```text
-/var/run/lxr.sock
-````
-
 ---
 
 # Setup LXR CLI
 
 LXR commands are executed using the separate CLI project:
 
-urlLXR-cli Repository[https://github.com/jack-san-145/LXR-cli/](https://github.com/jack-san-145/LXR-cli/)
+url: LXR-cli Repository[https://github.com/jack-san-145/LXR-cli](https://github.com/jack-san-145/LXR-cli)
 
 Clone and setup:
 
@@ -331,14 +322,14 @@ The container runs `code-server` internally so applications can be developed dir
 # create container
 lxr create --name go-con golang
 
+# start container
+lxr start go-con
+
 # enter container
 lxr exec go-con
 
 # stop container
 lxr stop go-con
-
-# restart container
-lxr start go-con
 
 # remove container
 lxr kill go-con

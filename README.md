@@ -1,39 +1,56 @@
 # LXR — Linux Container Runtime
 
-LXR is a lightweight Linux container runtime and browser-accessible development environment built from scratch using low-level Linux primitives such as namespaces, cgroups, veth networking, PTY execution, and isolated root filesystems.
+LXR is a Linux container runtime and browser-accessible development environment built from scratch using low-level Linux primitives such as namespaces, cgroups, veth networking, PTY execution, and isolated root filesystems.
 
 LXR manually implements core container runtime components including image pulling, rootfs extraction, process isolation, container networking, resource control, and interactive terminal execution.
 
-Each container runs inside its own isolated environment with integrated `code-server` support, allowing browser-based development directly inside containers.
+Each container includes integrated `code-server` support, enabling isolated browser-based development environments directly inside containers.
 
-Written in Go, LXR directly orchestrates namespaces, cgroups, networking, PTY systems, and filesystem isolation to create fully isolated container environments.
+LXR directly orchestrates namespaces, cgroups, networking, PTY systems, and filesystem isolation using Go to create fully isolated container environments.
 
 ---
 
 # Features
 
-* Create containers using Linux namespaces
-* Custom O(1) IP allocator with reusable IP pools
+* Linux namespace based container isolation
+* cgroup based resource control
 * Custom bridge networking with veth pairs
-* Unix socket based daemon communication
+* Custom O(1) IP allocator with reusable IP pools
+* PTY based interactive shell execution
+* Browser-accessible `code-server` containers
 * Pull container images directly from Docker Hub
 * Extract and manage isolated rootfs environments
-* Container lifecycle management
-* PTY based interactive shell execution
-* cgroup based resource control
-* Browser-accessible `code-server` inside containers
+* Unix socket based daemon communication
 * Persistent container metadata
 * CLI driven workflow
 
 ---
 
+# Architecture Overview
+
+```text
+lxr-cli
+    │
+unix socket (/var/run/lxr.sock)
+    │
+LXR daemon
+    │
+Handlers
+    │
+Helpers
+    │
+Namespaces / cgroups / networking / rootfs
+```
+
+---
+
 # Internal Architecture
 
-LXR is split into multiple internal layers:
+LXR is split into multiple internal layers.
 
 ## Handler Layer
 
-The handler layer exposes HTTP APIs over a Unix socket.
+The handler layer exposes HTTP APIs over a Unix socket and acts as the control plane entrypoint.
 
 Supported APIs:
 
@@ -50,7 +67,7 @@ Supported APIs:
 
 ## Helper Layer
 
-The helper layer contains the orchestration logic.
+The helper layer contains the orchestration logic responsible for container lifecycle management.
 
 This layer handles:
 
@@ -71,18 +88,19 @@ LXR uses:
 * Linux bridge networking
 * veth pairs
 * custom subnet allocation
+* reusable O(1) IP allocation
 
 Sample network configuration:
 
 ```env
-NETWORK=network
-CIDR=cidr
-BRIDGE_IP=bridge_ip
-IP_START_RANGE=ip_start_range
-IP_END_RANGE=ip_end_range
-NETWORK_ADDR=network_address
-BROADCAST_ADDR=broadcast_address
-TOTAL_USABLE_HOST=total_usable_host
+NETWORK=10.10.0.0
+CIDR=17
+BRIDGE_IP=10.10.0.1
+IP_START_RANGE=10.10.0.2
+IP_END_RANGE=10.10.127.254
+NETWORK_ADDR=10.10.0.0
+BROADCAST_ADDR=10.10.127.255
+TOTAL_USABLE_HOST=32766
 ```
 
 Each container receives:
@@ -92,6 +110,8 @@ Each container receives:
 * dynamically allocated IP
 * bridge connectivity
 * default gateway
+
+Released container IPs are automatically returned back to the reusable IP pool when containers are destroyed.
 
 ---
 
@@ -103,7 +123,7 @@ Interactive terminal access is implemented using:
 * nsenter
 * namespace attachment
 
-This allows containers to behave like real terminal environments.
+This allows containers to behave like real isolated terminal environments while preserving native terminal interaction.
 
 ---
 
@@ -111,9 +131,10 @@ This allows containers to behave like real terminal environments.
 
 ```text
 LXR/
-├── cmd/server/
-|   |main.go
-|   |routes.go
+├── cmd/
+│   └── server/
+│       ├── main.go
+│       └── routes.go
 ├── internal/
 │   ├── app/
 │   ├── handlers/
@@ -194,13 +215,22 @@ make build
 ```bash
 sudo make run
 ```
+
+LXR daemon communicates through:
+
+```text
+/var/run/lxr.sock
+```
+
 ---
 
 # Setup LXR CLI
 
-LXR commands are executed using the separate CLI project:
+LXR commands are executed using the separate CLI project.
 
-url: LXR-cli Repository[https://github.com/jack-san-145/LXR-cli](https://github.com/jack-san-145/LXR-cli)
+LXR-cli Repository:
+
+[https://github.com/jack-san-145/LXR-cli](https://github.com/jack-san-145/LXR-cli)
 
 Clone and setup:
 
@@ -221,7 +251,7 @@ Copy binary:
 sudo make cpbin
 ```
 
-Verify:
+Verify installation:
 
 ```bash
 lxr
@@ -237,7 +267,15 @@ lxr
 lxr create --name py-con python
 ```
 
-Container creation pulls the image, extracts rootfs, configures namespaces, networking, cgroups and installs dependencies.
+Container creation workflow:
+
+* pulls container image
+* extracts root filesystem
+* configures namespaces
+* sets up networking
+* configures cgroups
+* installs container dependencies
+* starts isolated environment
 
 ![Container Create](./assets/container-create.png)
 
@@ -301,6 +339,8 @@ This removes:
 * cgroups
 * container metadata
 
+Released container IPs are returned back to the reusable IP pool.
+
 ---
 
 # Container Environment
@@ -311,9 +351,9 @@ Each container automatically includes:
 * git
 * iproute2
 * ping utilities
-* code-server
+* `code-server`
 
-The container runs `code-server` internally so applications can be developed directly inside isolated environments.
+Containers expose browser-accessible development environments through integrated `code-server` support.
 
 ---
 
